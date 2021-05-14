@@ -2,25 +2,26 @@ const express = require('express')
 const commendModel = require('../model/commend')
 const router = express.Router()
 
-// detail get commend
-router.get('/:commendId', (req, res) => {
-
-    const id = req.params.commendId
+// total get commend
+router.get('/', (req, res) => {
 
     commendModel
-        .findById(id)
+        .find()
+        .populate('user', ['email', 'profileImage'])
         .populate('board', ['contents'])
-        .populate('user', ['email'])
-        .then(commend => {
+        .then(commends => {
             res.json({
-                msg : "get commend",
-                commendInfo : {
-                    id : commend._id,
-                    board : commend.board,
-                    user : commend.user,
-                    commend : commend.commend,
-                    date : commend.createdAt
-                }
+                msg : "get commends",
+                count : commends.length,
+                commendInfo : commends.map(commend => {
+                    return {
+                        id : commend._id,
+                        user : commend.user,
+                        board : commend.board,
+                        commend : commend.commend,
+                        date : commend.createdAt
+                    }
+                })
             })
         })
         .catch(err => {
@@ -30,13 +31,34 @@ router.get('/:commendId', (req, res) => {
         })
 })
 
+// detail get commend
+router.get('/:commendId', async (req, res) => {
+
+    const id = req.params.commendId
+
+    try{
+        const commend = await commendModel.findById(id)
+            .populate('board', ['contents'])
+            .populate('user', ['email'])
+
+        res.json({commend})
+
+    }
+    catch(err){
+        res.status(500).json({
+            msg : err.message
+        })
+    }
+
+})
+
 // register commend
 router.post('/', (req, res) => {
 
-    const {contents, user, commend} = req.body
+    const {board, user, commend} = req.body
 
     const newCommend = new commendModel({
-        contents, user, commend
+        board, user, commend
     })
 
     newCommend
@@ -61,8 +83,21 @@ router.post('/', (req, res) => {
 })
 
 // detail delete commend
-router.delete('/:commendId', (req, res) => {
-    
+router.delete('/:commendId', async (req, res) => {
+
+    const id = req.params.commendId
+
+    try{
+        await commendModel.findByIdAndRemove(id)
+        res.json({
+            msg : "delete commend id " + id
+        })
+    }
+    catch(err){
+        res.status(500).json({
+            msg : err.message
+        })
+    }
 })
 
 module.exports = router
