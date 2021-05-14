@@ -1,7 +1,40 @@
 const express = require('express')
 const userModel = require('../model/user')
 const jwt = require('jsonwebtoken')
+const multer = require('multer')
+const checkAuth = require('../middleware/check-auth')
 const router = express.Router()
+
+const storage = multer.diskStorage(
+    {
+        destination : function(req, file, cb){
+            cb(null, './uploads')
+        },
+        filename : function (req, file, cb){
+            cb(null, file.originalname)
+        }
+    }
+)
+
+const fileFilter = (req, file, cb) => {
+
+    if(file.mimetype === 'image/jpeg' || file.mimetype === 'image/png'){
+        cb(null, true)
+    }
+    else{
+        cb(null, false)
+    }
+}
+
+const upload = multer(
+    {
+        storage : storage,
+        limit : {
+            filesize : 1024*1024*5
+        },
+        fileFilter : fileFilter
+    }
+)
 
 // get userInfo
 router.get('/', (req, res) => {
@@ -102,6 +135,28 @@ router.post('/login', async (req, res) => {
     catch(err){
         res.status(500).json({
             msg : err.message
+        })
+    }
+})
+
+// update userInfo
+router.patch('/:userId', checkAuth, async (req, res) => {
+
+    const id = req.params.userId
+
+    const updateOps = {}
+
+    for(const ops of req.body){
+        updateOps[ops.propName] = ops.value
+    }
+
+    try{
+        const user = await userModel.findByIdAndUpdate(id, {$set : updateOps})
+        res.json({user})
+    }
+    catch(err){
+        res.status(500).json({
+            msg: err.message
         })
     }
 })
