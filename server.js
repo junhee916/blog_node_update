@@ -19,8 +19,6 @@ app.use(bodyParser.urlencoded({extended : false}))
 app.use(morgan('dev'))
 app.use(cors())
 
-app.use('/uploads', express.static('uploads'))
-
 app.use('/board', boardRouter)
 app.use('/user', userRouter)
 app.use('/commend', commendRouter)
